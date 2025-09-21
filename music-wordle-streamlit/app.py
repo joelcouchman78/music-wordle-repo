@@ -6,7 +6,7 @@ from pathlib import Path
 from typing import List, Tuple
 
 import streamlit as st
-from streamlit import components
+import streamlit.components.v1 as components
 
 
 # --- Config ---
@@ -201,10 +201,8 @@ def main():
 
     # Helper to render raw HTML reliably (avoid stray closing tags in markdown)
     def render_html(html: str, height: int):
-        if hasattr(st, 'html'):
-            st.html(html, height=height, scrolling=False)
-        else:
-            components.v1.html(html, height=height, scrolling=False)
+        # Use components.html for broad Streamlit compatibility across versions
+        components.html(html, height=height, scrolling=False)
 
     # Build entire board as one HTML block with CSS to keep rows intact on mobile
     css = """

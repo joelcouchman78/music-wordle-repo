@@ -328,24 +328,41 @@ def main():
                 submit_guess_from_state()
 
         emoji = {'correct': '🟩', 'present': '🟨', 'absent': '⬛', '': '⬜️'}
-        # Row 1
-        cols = st.columns(len(kb_rows[0]), gap='small')
-        for i, ch in enumerate(kb_rows[0]):
-            label = f"{emoji.get(key_status.get(ch, ''), '⬜️')} {ch}"
-            cols[i].button(label, key=f'kb_{ch}_r1', on_click=press_letter, args=(ch.lower(),))
-        # Row 2
-        cols = st.columns(len(kb_rows[1]), gap='small')
-        for i, ch in enumerate(kb_rows[1]):
-            label = f"{emoji.get(key_status.get(ch, ''), '⬜️')} {ch}"
-            cols[i].button(label, key=f'kb_{ch}_r2', on_click=press_letter, args=(ch.lower(),))
-        # Row 3 with ENTER and ⌫
-        row3 = list(kb_rows[2])
-        cols = st.columns(len(row3) + 2, gap='small')
-        cols[0].button('ENTER', key='kb_enter', disabled=(len(st.session_state.get('current_guess','')) != COLS), on_click=press_enter)
-        for i, ch in enumerate(row3, start=1):
-            label = f"{emoji.get(key_status.get(ch, ''), '⬜️')} {ch}"
-            cols[i].button(label, key=f'kb_{ch}_r3', on_click=press_letter, args=(ch.lower(),))
-        cols[-1].button('⌫', key='kb_back', disabled=(len(st.session_state.get('current_guess','')) == 0), on_click=press_back)
+        # Compact groups for mobile: always 5 columns per visual row
+        def render_group_row(groups, row_id):
+            cols = st.columns(5, gap='small')
+            for i, letters in enumerate(groups):
+                with cols[i]:
+                    for ch in letters:
+                        label = f"{emoji.get(key_status.get(ch, ''), '⬜️')} {ch}"
+                        st.button(label, key=f'kb_{ch}_{row_id}', on_click=press_letter, args=(ch.lower(),))
+
+        # Row 1: QWERTYUIOP -> 5 columns x 2 letters
+        groups1 = [['Q','W'], ['E','R'], ['T','Y'], ['U','I'], ['O','P']]
+        render_group_row(groups1, 'r1')
+
+        # Row 2: ASDFGHJKL -> 5 columns (last has 1 letter)
+        groups2 = [['A','S'], ['D','F'], ['G','H'], ['J','K'], ['L']]
+        render_group_row(groups2, 'r2')
+
+        # Row 3: ENTER | ZX | CV | BNM | ⌫
+        cols = st.columns(5, gap='small')
+        with cols[0]:
+            st.button('ENTER', key='kb_enter', disabled=(len(st.session_state.get('current_guess','')) != COLS), on_click=press_enter)
+        with cols[1]:
+            for ch in ['Z','X']:
+                label = f"{emoji.get(key_status.get(ch, ''), '⬜️')} {ch}"
+                st.button(label, key=f'kb_{ch}_r3a', on_click=press_letter, args=(ch.lower(),))
+        with cols[2]:
+            for ch in ['C','V']:
+                label = f"{emoji.get(key_status.get(ch, ''), '⬜️')} {ch}"
+                st.button(label, key=f'kb_{ch}_r3b', on_click=press_letter, args=(ch.lower(),))
+        with cols[3]:
+            for ch in ['B','N','M']:
+                label = f"{emoji.get(key_status.get(ch, ''), '⬜️')} {ch}"
+                st.button(label, key=f'kb_{ch}_r3c', on_click=press_letter, args=(ch.lower(),))
+        with cols[4]:
+            st.button('⌫', key='kb_back', disabled=(len(st.session_state.get('current_guess','')) == 0), on_click=press_back)
 
     else:
         st.success(st.session_state.message)

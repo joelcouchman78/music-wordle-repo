@@ -327,39 +327,34 @@ def main():
             if len(st.session_state.get('current_guess','')) == COLS:
                 submit_guess_from_state()
 
-        # Global CSS to render buttons inline and compact
+        # Global CSS to render buttons inline and ultra-compact
         st.markdown(
             """
             <style>
-              .stButton { display:inline-block; margin: 2px; }
-              .stButton>button { min-width: 42px; padding: 6px 6px; font-size: 14px; }
+              .stButton { display:inline-block; margin: 1px; }
+              .stButton>button { min-width: 34px; padding: 4px 4px; font-size: 12px; line-height: 1.1; }
               @media (max-width: 420px) {
-                .stButton>button { min-width: 36px; padding: 5px 5px; font-size: 13px; }
+                .stButton>button { min-width: 30px; padding: 3px 3px; font-size: 12px; }
               }
             </style>
             """,
             unsafe_allow_html=True,
         )
 
-        emoji = {'correct': '🟩', 'present': '🟨', 'absent': '⬛', '': '⬜️'}
-
         # Row 1 inline
         for ch in "QWERTYUIOP":
-            label = f"{emoji.get(key_status.get(ch, ''), '⬜️')} {ch}"
-            st.button(label, key=f'kb_{ch}_r1_inline', on_click=press_letter, args=(ch.lower(),))
+            st.button(ch, key=f'kb_{ch}_r1_inline', on_click=press_letter, args=(ch.lower(),))
         st.markdown("<div style='width:100%; height:6px; clear:both'></div>", unsafe_allow_html=True)
 
         # Row 2 inline
         for ch in "ASDFGHJKL":
-            label = f"{emoji.get(key_status.get(ch, ''), '⬜️')} {ch}"
-            st.button(label, key=f'kb_{ch}_r2_inline', on_click=press_letter, args=(ch.lower(),))
+            st.button(ch, key=f'kb_{ch}_r2_inline', on_click=press_letter, args=(ch.lower(),))
         st.markdown("<div style='width:100%; height:6px; clear:both'></div>", unsafe_allow_html=True)
 
         # Row 3 inline: ENTER, letters, BACK
-        st.button('ENTER', key='kb_enter_inline', disabled=(len(st.session_state.get('current_guess','')) != COLS), on_click=press_enter)
+        st.button('↵', key='kb_enter_inline', disabled=(len(st.session_state.get('current_guess','')) != COLS), on_click=press_enter)
         for ch in "ZXCVBNM":
-            label = f"{emoji.get(key_status.get(ch, ''), '⬜️')} {ch}"
-            st.button(label, key=f'kb_{ch}_r3_inline', on_click=press_letter, args=(ch.lower(),))
+            st.button(ch, key=f'kb_{ch}_r3_inline', on_click=press_letter, args=(ch.lower(),))
         st.button('⌫', key='kb_back_inline', disabled=(len(st.session_state.get('current_guess','')) == 0), on_click=press_back)
 
     else:

@@ -303,7 +303,9 @@ def main():
         st.write(f"Current guess: {st.session_state.current_guess.upper():<{COLS}}")
         if st.button('Guess', disabled=(len(st.session_state.get('current_guess','')) != COLS)):
             submit_guess_from_state()
-        # Single on-screen keyboard component
+
+        # Always render the custom keyboard (colored keys). If it fails to load on Cloud,
+        # the fallback keyboard + typed input below provide input paths.
         event = mw_keyboard(
             rows=kb_rows,
             statuses=key_status,
@@ -325,6 +327,55 @@ def main():
                     st.session_state.current_guess = st.session_state.get('current_guess','') + event.lower()
                     haptic()
                     st.rerun()
+
+        # Fallback input: typed guess field
+        typed = st.text_input('Type a guess (fallback)', key='typed_guess', max_chars=COLS)
+        if st.button('Submit typed guess', disabled=(len(typed or '') != COLS)):
+            # Use a copy to avoid mutating the widget value
+            tg = re.sub(r"[^A-Za-z]", "", typed or '').lower()
+            if len(tg) == COLS:
+                # Temporarily set current_guess for unified submission path
+                st.session_state.current_guess = tg
+                submit_guess_from_state()
+
+        # Fallback clickable keyboard (emoji labels) if component doesn't render
+        st.caption('If the colored keyboard above does not appear, use this fallback:')
+        emoji = {'correct': '🟩', 'present': '🟨', 'absent': '⬛', '': '⬜️'}
+        # Row 1
+        cols = st.columns(len(kb_rows[0]), gap='small')
+        for i, ch in enumerate(kb_rows[0]):
+            label = f"{emoji.get(key_status.get(ch, ''), '⬜️')} {ch}"
+            if cols[i].button(label, key=f'fb_{ch}_r1'):
+                if len(st.session_state.current_guess) < COLS:
+                    st.session_state.current_guess += ch.lower()
+                    haptic()
+                    st.rerun()
+        # Row 2
+        cols = st.columns(len(kb_rows[1]), gap='small')
+        for i, ch in enumerate(kb_rows[1]):
+            label = f"{emoji.get(key_status.get(ch, ''), '⬜️')} {ch}"
+            if cols[i].button(label, key=f'fb_{ch}_r2'):
+                if len(st.session_state.current_guess) < COLS:
+                    st.session_state.current_guess += ch.lower()
+                    haptic()
+                    st.rerun()
+        # Row 3 with ENTER and ⌫
+        row3 = list(kb_rows[2])
+        cols = st.columns(len(row3) + 2, gap='small')
+        if cols[0].button('ENTER', disabled=(len(st.session_state.current_guess) != COLS), key='fb_enter'):
+            submit_guess_from_state()
+        for i, ch in enumerate(row3, start=1):
+            label = f"{emoji.get(key_status.get(ch, ''), '⬜️')} {ch}"
+            if cols[i].button(label, key=f'fb_{ch}_r3'):
+                if len(st.session_state.current_guess) < COLS:
+                    st.session_state.current_guess += ch.lower()
+                    haptic()
+                    st.rerun()
+        if cols[-1].button('⌫', disabled=(len(st.session_state.current_guess) == 0), key='fb_back'):
+            if st.session_state.current_guess:
+                st.session_state.current_guess = st.session_state.current_guess[:-1]
+                haptic()
+                st.rerun()
 
     else:
         st.success(st.session_state.message)

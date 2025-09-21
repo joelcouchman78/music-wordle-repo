@@ -248,24 +248,25 @@ def main():
     st.write('')
     st.info(st.session_state.message or 'Guess the music word!')
 
-    # Handle fallback keyboard clicks via query param (?k=VALUE)
+    # Handle fallback keyboard clicks via query param (?k=VALUE) using the modern API only
     def _get_qp_key():
-        try:
-            qp = st.query_params  # type: ignore[attr-defined]
-            k = qp.get('k')
-            if isinstance(k, list):
-                return k[0]
-            return k
-        except Exception:
-            qp = st.experimental_get_query_params()
-            arr = qp.get('k', [None])
-            return arr[0]
+        qp = st.query_params
+        k = qp.get('k')
+        if isinstance(k, list):
+            return k[0]
+        return k
 
     def _clear_qp():
         try:
-            st.experimental_set_query_params()
+            # Remove only our key to avoid clobbering other params
+            if 'k' in st.query_params:
+                del st.query_params['k']
         except Exception:
-            pass
+            # As a last resort, clear all
+            try:
+                st.query_params.clear()
+            except Exception:
+                pass
 
     qp_event = _get_qp_key()
     if qp_event:

@@ -1,9 +1,12 @@
 import re
 import random
+import datetime
+import hashlib
 from pathlib import Path
 from typing import List, Tuple
 
 import streamlit as st
+from streamlit import components
 
 
 # --- Config ---
@@ -115,7 +118,8 @@ def ensure_state():
             ])
         st.session_state.allowed = sorted(allowed)
     if 'secret' not in st.session_state:
-        st.session_state.secret = random.choice(st.session_state.answers)
+        # Secret will be set by seeded picker later in main()
+        st.session_state.secret = None
     if 'guesses' not in st.session_state:
         st.session_state.guesses = []  # list[str]
     if 'statuses' not in st.session_state:
@@ -127,7 +131,9 @@ def ensure_state():
 
 
 def new_game():
-    st.session_state.secret = random.choice(st.session_state.answers)
+    # Pick a deterministic secret based on the current seed string
+    seed_str = st.session_state.get('seed_str') or 'default'
+    st.session_state.secret = seeded_choice(st.session_state.answers, seed_str)
     st.session_state.guesses = []
     st.session_state.statuses = []
     st.session_state.message = 'New secret picked. Good luck!'
@@ -161,6 +167,22 @@ def main():
     st.set_page_config(page_title='Music Wordle (Streamlit)', page_icon='🎵', layout='centered')
     ensure_state()
 
+    # Sidebar game settings: daily seed vs custom seed
+    st.sidebar.header('Game settings')
+    daily = st.sidebar.toggle('Daily mode', value=True, help="Use today's UTC date as the seed")
+    seed_text = st.sidebar.text_input('Custom seed', value='', placeholder='(ignored if Daily mode is on)')
+
+    # Compute seed string and store for callbacks
+    if daily:
+        seed_str = datetime.datetime.utcnow().date().isoformat()
+    else:
+        seed_str = seed_text.strip() or 'default'
+    st.session_state.seed_str = seed_str
+
+    # Initialize secret deterministically if not set
+    if not st.session_state.secret:
+        st.session_state.secret = seeded_choice(st.session_state.answers, seed_str)
+
     # Sidebar controls
     with st.sidebar:
         st.markdown('### 🎵 Music Wordle')
@@ -172,6 +194,8 @@ def main():
         if uploaded is not None:
             load_custom_dictionary(uploaded.getvalue())
             st.success(f"Loaded dictionary with {len(st.session_state.allowed)} words (answers included).")
+
+    st.caption(f"Seeded with: {seed_str}")
 
     st.title('Music Wordle')
 
@@ -219,8 +243,45 @@ def main():
                 st.experimental_rerun()
     else:
         st.success(st.session_state.message)
+        # Shareable results block
+        summary_lines = build_share_summary(st.session_state.statuses, daily, seed_str)
+        result_text = "\n".join(summary_lines)
+        with st.expander('Share your result'):
+            copy_ui(result_text)
+
+def seeded_choice(items, seed_str: str):
+    """Deterministic choice from a list based on the provided seed string."""
+    h = int(hashlib.sha256(seed_str.encode()).hexdigest(), 16)
+    rng = random.Random(h)
+    return rng.choice(items)
+
+def build_share_summary(status_rows, daily: bool, seed_str: str):
+    title = f"Music Wordle — {'Daily' if daily else 'Seeded'} {seed_str}"
+    tries = len(status_rows)
+    header = f"Guesses: {tries}/{ROWS}"
+    emoji_map = {'correct': '🟩', 'present': '🟨', 'absent': '⬛'}
+    grid = ["".join(emoji_map.get(s, '⬛') for s in row) for row in status_rows]
+    return [title, header, *grid]
+
+def copy_ui(result_text: str):
+    st.text_area('Result', result_text, height=140)
+    if st.button('Copy to clipboard'):
+        # Inject small JS to copy; works in most browsers/Streamlit hosts
+        components.v1.html(
+            f"""
+            <script>
+            const text = {result_text!r};
+            navigator.clipboard.writeText(text).then(() => {{
+              const el = document.createElement('div');
+              el.innerText = 'Copied to clipboard';
+              document.body.appendChild(el);
+              setTimeout(()=>document.body.removeChild(el), 800);
+            }});
+            </script>
+            """,
+            height=0,
+        )
 
 
 if __name__ == '__main__':
     main()
-

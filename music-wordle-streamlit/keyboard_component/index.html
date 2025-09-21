@@ -32,6 +32,8 @@
     <div id="root"></div>
     <script>
       const root = document.getElementById('root');
+      let componentId = null;
+      let readySent = false;
 
       function post(type, payload) {
         window.parent.postMessage({ type, ...payload }, '*');
@@ -44,7 +46,7 @@
         if (disabled) b.disabled = true;
         b.onclick = () => {
           const val = (label === 'ENTER') ? 'ENTER' : (label === '⌫' ? 'BACK' : label);
-          post('streamlit:setComponentValue', { value: val, dataType: 'json' });
+          post('streamlit:setComponentValue', { id: componentId, value: val, dataType: 'json' });
         };
         return b;
       }
@@ -71,18 +73,24 @@
         root.appendChild(kb);
         // Adjust height for Streamlit container
         const h = Math.ceil(kb.getBoundingClientRect().height) + 8;
-        post('streamlit:setFrameHeight', { height: h });
+        post('streamlit:setFrameHeight', { id: componentId, height: h });
+      }
+
+      function sendReady() {
+        if (!readySent && componentId != null) {
+          post('streamlit:componentReady', { id: componentId, apiVersion: 1 });
+          readySent = true;
+        }
       }
 
       window.addEventListener('message', (event) => {
         const msg = event.data || {};
         if (msg.type === 'streamlit:render') {
+          if (msg.id !== undefined && msg.id !== null) componentId = msg.id;
           render(msg.args || {});
+          sendReady();
         }
       });
-
-      // Signal ready
-      post('streamlit:componentReady', { apiVersion: 1 });
     </script>
   </body>
   </html>

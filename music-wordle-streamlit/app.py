@@ -7,6 +7,7 @@ from typing import List, Tuple
 
 import streamlit as st
 import streamlit.components.v1 as components
+from streamlit.components.v1 import declare_component
 
 
 # --- Config ---
@@ -252,7 +253,11 @@ def main():
 
     key_status = compute_key_status(st.session_state.guesses, st.session_state.statuses)
     kb_rows = ["QWERTYUIOP", "ASDFGHJKL", "ZXCVBNM"]
-    # We will render a single clickable keyboard below with colored labels
+    # Custom keyboard component (colored buttons + click events)
+    mw_keyboard = declare_component(
+        "mw_keyboard",
+        path=str(Path(__file__).resolve().parent / 'keyboard_component')
+    )
 
     # Input form
     def haptic():
@@ -298,44 +303,28 @@ def main():
         st.text_input('Your guess', key='guess_input', max_chars=COLS, help='Type a 5-letter English word or use the keyboard below')
         if st.button('Guess', disabled=(len(st.session_state.get('guess_input','')) != COLS)):
             submit_guess_from_state()
-        # Clickable keyboard (input)
-        st.write("")
-        # Row 1
-        emoji = {'correct': '🟩', 'present': '🟨', 'absent': '⬛', '': '⬜️'}
-        cols = st.columns(len(kb_rows[0]), gap='small')
-        for i, ch in enumerate(kb_rows[0]):
-            label = f"{emoji.get(key_status.get(ch, ''), '⬜️')} {ch}"
-            if cols[i].button(label, key=f'btn_{ch}_r1'):
-                if len(st.session_state.guess_input) < COLS:
-                    st.session_state.guess_input += ch.lower()
+        # Single on-screen keyboard component
+        event = mw_keyboard(
+            rows=kb_rows,
+            statuses=key_status,
+            disableEnter=(len(st.session_state.get('guess_input','')) != COLS),
+            disableBackspace=(len(st.session_state.get('guess_input','')) == 0),
+            key='mw_keyboard_component'
+        )
+        if event:
+            if event == 'ENTER':
+                submit_guess_from_state()
+            elif event == 'BACK':
+                if st.session_state.get('guess_input'):
+                    st.session_state.guess_input = st.session_state.get('guess_input','')[:-1]
                     haptic()
                     st.rerun()
-        # Row 2
-        cols = st.columns(len(kb_rows[1]), gap='small')
-        for i, ch in enumerate(kb_rows[1]):
-            label = f"{emoji.get(key_status.get(ch, ''), '⬜️')} {ch}"
-            if cols[i].button(label, key=f'btn_{ch}_r2'):
-                if len(st.session_state.guess_input) < COLS:
-                    st.session_state.guess_input += ch.lower()
+            else:
+                # Letter
+                if len(st.session_state.get('guess_input','')) < COLS and re.fullmatch(r"[A-Z]", event):
+                    st.session_state.guess_input = st.session_state.get('guess_input','') + event.lower()
                     haptic()
                     st.rerun()
-        # Row 3 with ENTER and ⌫
-        row3 = list(kb_rows[2])
-        cols = st.columns(len(row3) + 2, gap='small')
-        if cols[0].button('ENTER', disabled=(len(st.session_state.guess_input) != COLS)):
-            submit_guess_from_state()
-        for i, ch in enumerate(row3, start=1):
-            label = f"{emoji.get(key_status.get(ch, ''), '⬜️')} {ch}"
-            if cols[i].button(label, key=f'btn_{ch}_r3'):
-                if len(st.session_state.guess_input) < COLS:
-                    st.session_state.guess_input += ch.lower()
-                    haptic()
-                    st.rerun()
-        if cols[-1].button('⌫', disabled=(len(st.session_state.guess_input) == 0)):
-            if st.session_state.guess_input:
-                st.session_state.guess_input = st.session_state.guess_input[:-1]
-                haptic()
-                st.rerun()
 
     else:
         st.success(st.session_state.message)

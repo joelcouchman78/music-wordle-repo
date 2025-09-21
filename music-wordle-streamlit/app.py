@@ -397,14 +397,27 @@ def main():
         <style>
           .fb-kb { display:flex; flex-direction:column; gap:6px; align-items:center; }
           .fb-row { display:flex; gap:6px; justify-content:center; }
-          .fb-key { display:inline-block; min-width:28px; padding:7px 6px; border-radius:6px; text-decoration:none; font-weight:700; font-size:14px; }
+          .fb-key { min-width:28px; padding:7px 6px; border-radius:6px; font-weight:700; font-size:14px; border:none; cursor:pointer; }
           .fb-neutral { background:#1f1f20; color:#f0f0f0; }
           .fb-correct { background:#538d4e; color:#fff; }
           .fb-present { background:#b59f3b; color:#fff; }
           .fb-absent  { background:#3a3a3c; color:#fff; }
-          .fb-key.disabled { opacity:.6; pointer-events:none; }
+          .fb-key:disabled { opacity:.6; cursor:default; }
           @media (max-width:420px){ .fb-key { min-width:24px; font-size:13px; padding:6px 5px; } }
         </style>
+        """
+        fb_js = """
+        <script>
+          function fbSet(k){
+            try{
+              const u=new URL(window.location.href);
+              if(k===null){ u.searchParams.delete('k'); } else { u.searchParams.set('k', k); }
+              window.location.href = u.toString();
+            }catch(e){
+              if(k===null){ window.location.search=''; } else { window.location.search='k='+encodeURIComponent(k); }
+            }
+          }
+        </script>
         """
         def fb_row_html(chars):
             parts = []
@@ -414,21 +427,18 @@ def main():
                 if stt == 'correct': cls='fb-correct'
                 elif stt == 'present': cls='fb-present'
                 elif stt == 'absent': cls='fb-absent'
-                href = f"?k={ch}"
-                parts.append(f'<a class="fb-key {cls}" href="{href}">{ch}</a>')
+                parts.append(f'<button type="button" class="fb-key {cls}" onclick="fbSet(\'{ch}\')">{ch}</button>')
             return '<div class="fb-row">' + ''.join(parts) + '</div>'
 
         # Build rows + enter/back
         rows_html = [fb_row_html(kb_rows[0]), fb_row_html(kb_rows[1])]
         disable_enter = len(st.session_state.current_guess) != COLS
         disable_back = len(st.session_state.current_guess) == 0
-        row3_keys = ''.join([
-            f'<a class="fb-key fb-neutral {"disabled" if disable_enter else ""}" href="?k=ENTER">ENTER</a>',
-            fb_row_html(kb_rows[2]),
-            f'<a class="fb-key fb-neutral {"disabled" if disable_back else ""}" href="?k=BACK">⌫</a>',
-        ])
+        enter_btn = f'<button type="button" class="fb-key fb-neutral" onclick="fbSet(\'ENTER\')" {"disabled" if disable_enter else ""}>ENTER</button>'
+        back_btn = f'<button type="button" class="fb-key fb-neutral" onclick="fbSet(\'BACK\')" {"disabled" if disable_back else ""}>⌫</button>'
+        row3_keys = ''.join([enter_btn, fb_row_html(kb_rows[2]), back_btn])
         rows_html.append(f'<div class="fb-row">{row3_keys}</div>')
-        st.markdown(fb_css + '<div class="fb-kb">' + ''.join(rows_html) + '</div>', unsafe_allow_html=True)
+        st.markdown(fb_css + fb_js + '<div class="fb-kb">' + ''.join(rows_html) + '</div>', unsafe_allow_html=True)
 
     else:
         st.success(st.session_state.message)

@@ -357,34 +357,39 @@ def main():
             if len(st.session_state.get('current_guess','')) == COLS:
                 submit_guess_from_state()
 
-        # Ultra-compact inline buttons
+        # Compact inline buttons (with emoji status on keys)
         st.markdown(
             """
             <style>
               .stButton { display:inline-block; margin: 1px; }
-              .stButton>button { min-width: 28px; padding: 2px 3px; font-size: 11px; line-height: 1.05; }
+              .stButton>button { min-width: 34px; padding: 4px 4px; font-size: 12px; line-height: 1.1; }
               @media (max-width: 420px) {
-                .stButton>button { min-width: 26px; padding: 2px 2px; font-size: 11px; }
+                .stButton>button { min-width: 30px; padding: 3px 3px; font-size: 12px; }
               }
             </style>
             """,
             unsafe_allow_html=True,
         )
 
+        emoji = {'correct': '🟩', 'present': '🟨', 'absent': '⬛', '': '⬜️'}
+
         # Row 1
         for ch in "QWERTYUIOP":
-            st.button(ch, key=f'kb_{ch}_r1', on_click=press_letter, args=(ch.lower(),))
+            label = f"{emoji.get(key_status.get(ch, ''), '⬜️')} {ch}"
+            st.button(label, key=f'kb_{ch}_r1', on_click=press_letter, args=(ch.lower(),))
         st.markdown("<div style='width:100%; height:6px'></div>", unsafe_allow_html=True)
 
         # Row 2
         for ch in "ASDFGHJKL":
-            st.button(ch, key=f'kb_{ch}_r2', on_click=press_letter, args=(ch.lower(),))
+            label = f"{emoji.get(key_status.get(ch, ''), '⬜️')} {ch}"
+            st.button(label, key=f'kb_{ch}_r2', on_click=press_letter, args=(ch.lower(),))
         st.markdown("<div style='width:100%; height:6px'></div>", unsafe_allow_html=True)
 
         # Row 3
         st.button('↵', key='kb_enter', disabled=(len(st.session_state.get('current_guess','')) != COLS), on_click=press_enter)
         for ch in "ZXCVBNM":
-            st.button(ch, key=f'kb_{ch}_r3', on_click=press_letter, args=(ch.lower(),))
+            label = f"{emoji.get(key_status.get(ch, ''), '⬜️')} {ch}"
+            st.button(label, key=f'kb_{ch}_r3', on_click=press_letter, args=(ch.lower(),))
         st.button('⌫', key='kb_back', disabled=(len(st.session_state.get('current_guess','')) == 0), on_click=press_back)
 
     else:

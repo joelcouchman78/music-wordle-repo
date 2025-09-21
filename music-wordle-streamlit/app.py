@@ -268,26 +268,18 @@ def main():
 
     qp_event = _get_qp_key()
     if qp_event:
-        # Clear query param first to avoid repeated processing on rerun
-        _clear_qp()
+        # Process first, then clear the query param (clearing may trigger a rerun)
         if qp_event == 'ENTER':
             submit_guess_from_state()
         elif qp_event == 'BACK':
             if st.session_state.get('current_guess'):
                 st.session_state.current_guess = st.session_state.get('current_guess','')[:-1]
                 haptic()
-                try:
-                    st.rerun()
-                except Exception:
-                    pass
         elif re.fullmatch(r"[A-Z]", qp_event):
             if len(st.session_state.get('current_guess','')) < COLS:
                 st.session_state.current_guess = st.session_state.get('current_guess','') + qp_event.lower()
                 haptic()
-                try:
-                    st.rerun()
-                except Exception:
-                    pass
+        _clear_qp()
 
     # On-screen keyboard status (shows which letters you've tried)
     def compute_key_status(guesses: List[str], stats_rows: List[List[str]]):

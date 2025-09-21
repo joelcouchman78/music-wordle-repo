@@ -212,10 +212,10 @@ def main():
     # Build entire board as one HTML block with CSS to keep rows intact on mobile
     css = """
     <style>
-      .mw-board { display:flex; flex-direction:column; gap:6px; align-items:center; }
-      .mw-row { display:flex; gap:6px; justify-content:center; }
-      .mw-tile { --tile-size: 48px; }
-      @media (max-width: 420px) { .mw-tile { --tile-size: 42px; } .mw-tile { font-size: 18px; } }
+      .mw-board { display:flex; flex-direction:column; gap:4px; align-items:center; }
+      .mw-row { display:flex; gap:4px; justify-content:center; }
+      .mw-tile { --tile-size: 44px; }
+      @media (max-width: 420px) { .mw-tile { --tile-size: 38px; } .mw-tile { font-size: 16px; } }
     </style>
     """
     rows_html = []

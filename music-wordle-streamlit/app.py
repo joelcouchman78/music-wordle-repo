@@ -199,32 +199,33 @@ def main():
 
     st.title('Music Wordle')
 
-    # Inject responsive CSS for the grid (keeps 5 tiles per row on mobile)
-    st.markdown(
-        """
-        <style>
-        .mw-row { display:flex; gap:6px; justify-content:center; }
-        .mw-tile { width: 48px; height: 48px; }
-        @media (max-width: 420px) {
-          .mw-tile { width: 42px; height: 42px; font-size: 18px; }
-        }
-        </style>
-        """,
-        unsafe_allow_html=True,
-    )
+    # Helper to render raw HTML reliably (avoid stray closing tags in markdown)
+    def render_html(html: str, height: int):
+        if hasattr(st, 'html'):
+            st.html(html, height=height, scrolling=False)
+        else:
+            components.v1.html(html, height=height, scrolling=False)
 
-    # Grid rendering: build each row as a single flex container to avoid Streamlit column stacking on mobile
-    def render_row(chars, stats):
-        tiles = "".join(tile_html(chars[c].upper() if c < len(chars) else '', stats[c] if c < len(stats) else '') for c in range(COLS))
-        return f'<div class="mw-row">{tiles}</div>'
-
+    # Build entire board as one HTML block with CSS to keep rows intact on mobile
+    css = """
+    <style>
+      .mw-board { display:flex; flex-direction:column; gap:6px; align-items:center; }
+      .mw-row { display:flex; gap:6px; justify-content:center; }
+      .mw-tile { width: 48px; height: 48px; }
+      @media (max-width: 420px) { .mw-tile { width: 42px; height: 42px; font-size: 18px; } }
+    </style>
+    """
+    rows_html = []
     for r in range(ROWS):
         if r < len(st.session_state.guesses):
             guess = st.session_state.guesses[r]
             status = st.session_state.statuses[r]
-            st.markdown(render_row(guess, status), unsafe_allow_html=True)
+            tiles = "".join(tile_html(guess[c].upper(), status[c]) for c in range(COLS))
         else:
-            st.markdown(render_row(['']*COLS, ['']*COLS), unsafe_allow_html=True)
+            tiles = "".join(tile_html('', '') for _ in range(COLS))
+        rows_html.append(f'<div class="mw-row">{tiles}</div>')
+    board_html = css + '<div class="mw-board">' + "".join(rows_html) + '</div>'
+    render_html(board_html, height=ROWS * 56)
 
     st.write('')
     st.info(st.session_state.message or 'Guess the music word!')

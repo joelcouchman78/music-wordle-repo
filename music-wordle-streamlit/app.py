@@ -10,6 +10,21 @@ import streamlit.components.v1 as components
 from streamlit.components.v1 import declare_component
 
 
+# Simple haptic feedback helper usable across the module
+def haptic():
+    try:
+        components.html(
+            """
+            <script>
+            try { if (navigator.vibrate) navigator.vibrate(12); } catch(e) {}
+            </script>
+            """,
+            height=0,
+        )
+    except Exception:
+        pass
+
+
 # --- Config ---
 ROWS = 6
 COLS = 5
@@ -296,16 +311,6 @@ def main():
     )
 
     # Input form
-    def haptic():
-        try:
-            components.html("""
-            <script>
-            try { if (navigator.vibrate) navigator.vibrate(12); } catch(e) {}
-            </script>
-            """, height=0)
-        except Exception:
-            pass
-
     def submit_guess_from_state():
         g = re.sub(r"[^A-Za-z]", "", st.session_state.get('current_guess', '')).lower()
         if len(g) != COLS:

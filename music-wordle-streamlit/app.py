@@ -208,7 +208,7 @@ def main():
         st.button('New Game', on_click=new_game, use_container_width=True)
         st.write(f"Answers: {len(st.session_state.answers)}")
         st.write(f"Dictionary: {len(st.session_state.allowed)}")
-                uploaded = st.file_uploader('Load Dictionary (.txt or .json)', type=['txt', 'json'])
+        uploaded = st.file_uploader('Load Dictionary (.txt or .json)', type=['txt', 'json'])
         if uploaded is not None:
             load_custom_dictionary(uploaded.getvalue())
             st.success(f"Loaded dictionary with {len(st.session_state.allowed)} words (answers included).")
@@ -310,11 +310,6 @@ def main():
 
     key_status = compute_key_status(st.session_state.guesses, st.session_state.statuses)
     kb_rows = ["QWERTYUIOP", "ASDFGHJKL", "ZXCVBNM"]
-    # Custom keyboard component (colored buttons + click events)
-    mw_keyboard = declare_component(
-        "mw_keyboard",
-        path=str(Path(__file__).resolve().parent / 'keyboard_component')
-    )
 
     # Input form
     def submit_guess_from_state():

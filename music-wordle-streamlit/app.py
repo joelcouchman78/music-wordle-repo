@@ -252,7 +252,14 @@ def main():
                     st.session_state.finished = True
                 else:
                     st.session_state.message = ''
-                st.experimental_rerun()
+                # Rerun to refresh the board after a submission
+                try:
+                    st.rerun()
+                except Exception:
+                    # Fallback for older versions
+                    import streamlit as _st
+                    if hasattr(_st, 'experimental_rerun'):
+                        _st.experimental_rerun()
     else:
         st.success(st.session_state.message)
         # Shareable results block

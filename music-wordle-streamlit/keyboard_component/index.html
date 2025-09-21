@@ -34,7 +34,7 @@
       const root = document.getElementById('root');
 
       function post(type, payload) {
-        window.parent.postMessage({ isStreamlitMessage: true, type, ...payload }, '*');
+        window.parent.postMessage({ type, ...payload }, '*');
       }
 
       function keyButton(label, status, disabled) {
@@ -44,7 +44,7 @@
         if (disabled) b.disabled = true;
         b.onclick = () => {
           const val = (label === 'ENTER') ? 'ENTER' : (label === '⌫' ? 'BACK' : label);
-          post('streamlit:setComponentValue', { value: val });
+          post('streamlit:setComponentValue', { value: val, dataType: 'json' });
         };
         return b;
       }
@@ -76,15 +76,13 @@
 
       window.addEventListener('message', (event) => {
         const msg = event.data || {};
-        if (!msg.isStreamlitMessage) return;
         if (msg.type === 'streamlit:render') {
           render(msg.args || {});
         }
       });
 
       // Signal ready
-      post('streamlit:componentReady');
+      post('streamlit:componentReady', { apiVersion: 1 });
     </script>
   </body>
   </html>
-

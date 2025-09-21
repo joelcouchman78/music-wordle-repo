@@ -95,10 +95,11 @@ def tile_html(ch: str, status: str) -> str:
     border = bg
     return f"""
     <div class="mw-tile" style="
-        display: grid; place-items: center;
+        display:flex; align-items:center; justify-content:center;
+        width: var(--tile-size,48px); height: var(--tile-size,48px);
         background: {bg}; border: 2px solid {border}; border-radius: 6px;
-        font-weight: 800; font-size: 22px; color: #e5e5e5;
-        text-transform: uppercase;">
+        font-weight: 800; font-size: 22px; line-height: 1; color: #e5e5e5; font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
+        text-transform: uppercase; text-align:center;">
       {ch}
     </div>
     """
@@ -209,8 +210,8 @@ def main():
     <style>
       .mw-board { display:flex; flex-direction:column; gap:6px; align-items:center; }
       .mw-row { display:flex; gap:6px; justify-content:center; }
-      .mw-tile { width: 48px; height: 48px; }
-      @media (max-width: 420px) { .mw-tile { width: 42px; height: 42px; font-size: 18px; } }
+      .mw-tile { --tile-size: 48px; }
+      @media (max-width: 420px) { .mw-tile { --tile-size: 42px; } .mw-tile { font-size: 18px; } }
     </style>
     """
     rows_html = []

@@ -327,42 +327,40 @@ def main():
             if len(st.session_state.get('current_guess','')) == COLS:
                 submit_guess_from_state()
 
+        # Global CSS to render buttons inline and compact
+        st.markdown(
+            """
+            <style>
+              .stButton { display:inline-block; margin: 2px; }
+              .stButton>button { min-width: 42px; padding: 6px 6px; font-size: 14px; }
+              @media (max-width: 420px) {
+                .stButton>button { min-width: 36px; padding: 5px 5px; font-size: 13px; }
+              }
+            </style>
+            """,
+            unsafe_allow_html=True,
+        )
+
         emoji = {'correct': '🟩', 'present': '🟨', 'absent': '⬛', '': '⬜️'}
-        # Compact groups for mobile: always 5 columns per visual row
-        def render_group_row(groups, row_id):
-            cols = st.columns(5, gap='small')
-            for i, letters in enumerate(groups):
-                with cols[i]:
-                    for ch in letters:
-                        label = f"{emoji.get(key_status.get(ch, ''), '⬜️')} {ch}"
-                        st.button(label, key=f'kb_{ch}_{row_id}', on_click=press_letter, args=(ch.lower(),))
 
-        # Row 1: QWERTYUIOP -> 5 columns x 2 letters
-        groups1 = [['Q','W'], ['E','R'], ['T','Y'], ['U','I'], ['O','P']]
-        render_group_row(groups1, 'r1')
+        # Row 1 inline
+        for ch in "QWERTYUIOP":
+            label = f"{emoji.get(key_status.get(ch, ''), '⬜️')} {ch}"
+            st.button(label, key=f'kb_{ch}_r1_inline', on_click=press_letter, args=(ch.lower(),))
+        st.markdown("<div style='width:100%; height:6px'></div>", unsafe_allow_html=True)
 
-        # Row 2: ASDFGHJKL -> 5 columns (last has 1 letter)
-        groups2 = [['A','S'], ['D','F'], ['G','H'], ['J','K'], ['L']]
-        render_group_row(groups2, 'r2')
+        # Row 2 inline
+        for ch in "ASDFGHJKL":
+            label = f"{emoji.get(key_status.get(ch, ''), '⬜️')} {ch}"
+            st.button(label, key=f'kb_{ch}_r2_inline', on_click=press_letter, args=(ch.lower(),))
+        st.markdown("<div style='width:100%; height:6px'></div>", unsafe_allow_html=True)
 
-        # Row 3: ENTER | ZX | CV | BNM | ⌫
-        cols = st.columns(5, gap='small')
-        with cols[0]:
-            st.button('ENTER', key='kb_enter', disabled=(len(st.session_state.get('current_guess','')) != COLS), on_click=press_enter)
-        with cols[1]:
-            for ch in ['Z','X']:
-                label = f"{emoji.get(key_status.get(ch, ''), '⬜️')} {ch}"
-                st.button(label, key=f'kb_{ch}_r3a', on_click=press_letter, args=(ch.lower(),))
-        with cols[2]:
-            for ch in ['C','V']:
-                label = f"{emoji.get(key_status.get(ch, ''), '⬜️')} {ch}"
-                st.button(label, key=f'kb_{ch}_r3b', on_click=press_letter, args=(ch.lower(),))
-        with cols[3]:
-            for ch in ['B','N','M']:
-                label = f"{emoji.get(key_status.get(ch, ''), '⬜️')} {ch}"
-                st.button(label, key=f'kb_{ch}_r3c', on_click=press_letter, args=(ch.lower(),))
-        with cols[4]:
-            st.button('⌫', key='kb_back', disabled=(len(st.session_state.get('current_guess','')) == 0), on_click=press_back)
+        # Row 3 inline: ENTER, letters, BACK
+        st.button('ENTER', key='kb_enter_inline', disabled=(len(st.session_state.get('current_guess','')) != COLS), on_click=press_enter)
+        for ch in "ZXCVBNM":
+            label = f"{emoji.get(key_status.get(ch, ''), '⬜️')} {ch}"
+            st.button(label, key=f'kb_{ch}_r3_inline', on_click=press_letter, args=(ch.lower(),))
+        st.button('⌫', key='kb_back_inline', disabled=(len(st.session_state.get('current_guess','')) == 0), on_click=press_back)
 
     else:
         st.success(st.session_state.message)

@@ -110,3 +110,15 @@ button:active { transform: translateY(1px); }
 }
 .controls { display: flex; gap: 8px; align-items: center; }
 
+.settings {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  padding: 8px 4px 0;
+  color: var(--muted);
+}
+.setting-item { display: inline-flex; gap: 6px; align-items: center; }
+.seed-input { flex: 1; min-width: 160px; padding: 8px; border-radius: 6px; border: 1px solid #2a2a2b; background: #1a1a1b; color: var(--text); }
+.secondary { background: #2a2a2b; color: var(--text); }
+
+.share textarea { width: 100%; background: #111; color: var(--text); border: 1px solid #2a2a2b; border-radius: 6px; padding: 8px; }

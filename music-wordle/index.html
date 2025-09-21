@@ -17,11 +17,20 @@
         </div>
       </header>
 
+      <section class="settings" aria-label="Game settings">
+        <label class="setting-item"><input type="checkbox" id="daily-mode" checked /> Daily mode</label>
+        <input id="seed-input" class="seed-input" type="text" placeholder="Custom seed (used when Daily off)" aria-label="Custom seed" disabled />
+        <button id="share-btn" class="secondary" style="display:none">Share Result</button>
+      </section>
+
       <main>
         <div id="board" class="board" aria-label="Word grid" aria-live="polite"></div>
         <div id="message" class="message" role="status" aria-live="polite"></div>
 
         <div id="keyboard" class="keyboard" aria-label="On-screen keyboard"></div>
+        <div id="share-container" class="share" style="display:none">
+          <textarea id="share-text" readonly rows="6" aria-label="Shareable result"></textarea>
+        </div>
       </main>
 
       <footer class="footer">

@@ -74,28 +74,80 @@
   const newGameBtn = document.getElementById('new-game');
   const loadDictBtn = document.getElementById('load-dict');
   const dictFileInput = document.getElementById('dict-file');
+  const dailyToggle = document.getElementById('daily-mode');
+  const seedInput = document.getElementById('seed-input');
+  const shareBtn = document.getElementById('share-btn');
+  const shareText = document.getElementById('share-text');
+  const shareContainer = document.getElementById('share-container');
 
-  let secret = pickSecret();
+  let secret = null;
   let currentRow = 0;
   let currentCol = 0;
   let grid = Array.from({ length: ROWS }, () => Array(COLS).fill(''));
   let statuses = Array.from({ length: ROWS }, () => Array(COLS).fill('')); // correct/present/absent
   let finished = false;
+  let seedStr = computeSeed();
+
+  // Deterministic RNG helpers for seeded choice
+  function xmur3(str) {
+    let h = 1779033703 ^ str.length;
+    for (let i = 0; i < str.length; i++) {
+      h = Math.imul(h ^ str.charCodeAt(i), 3432918353);
+      h = (h << 13) | (h >>> 19);
+    }
+    return function () {
+      h = Math.imul(h ^ (h >>> 16), 2246822507);
+      h = Math.imul(h ^ (h >>> 13), 3266489909);
+      h ^= h >>> 16;
+      return h >>> 0;
+    };
+  }
+  function mulberry32(a) {
+    return function () {
+      let t = (a += 0x6D2B79F5);
+      t = Math.imul(t ^ (t >>> 15), t | 1);
+      t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+  }
+  function seededChoice(arr, seed) {
+    const seedInt = xmur3(seed)();
+    const rnd = mulberry32(seedInt);
+    const idx = Math.floor(rnd() * arr.length);
+    return arr[idx];
+  }
+  function computeSeed() {
+    const daily = dailyToggle ? dailyToggle.checked : true;
+    if (daily) {
+      const now = new Date();
+      const iso = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()))
+        .toISOString()
+        .slice(0, 10);
+      return iso;
+    }
+    return (seedInput && seedInput.value.trim()) || 'default';
+  }
 
   // Build board and keyboard UI
   buildBoard();
   buildKeyboard();
+  // Init seed + secret
+  updateSeedUIState();
+  secret = seededChoice(ANSWERS, seedStr);
   updateBoard();
-  setMessage(`Guess the music word! Answers: ${ANSWERS.length}, Dictionary: ${allowedSet.size}`);
+  setMessage(`Guess the music word! Answers: ${ANSWERS.length}, Dictionary: ${allowedSet.size}. Seeded with: ${seedStr}`);
 
   // Events
   document.addEventListener('keydown', onKeyDown);
   newGameBtn.addEventListener('click', resetGame);
   loadDictBtn.addEventListener('click', () => dictFileInput.click());
   dictFileInput.addEventListener('change', onLoadDictionary);
+  if (dailyToggle) dailyToggle.addEventListener('change', onSeedControlsChange);
+  if (seedInput) seedInput.addEventListener('input', onSeedControlsChange);
+  if (shareBtn) shareBtn.addEventListener('click', onShare);
 
   function pickSecret() {
-    return ANSWERS[Math.floor(Math.random() * ANSWERS.length)];
+    return seededChoice(ANSWERS, seedStr);
   }
 
   function buildBoard() {
@@ -187,6 +239,7 @@
     if (guess === secret) {
       finished = true;
       setMessage(winMessage());
+      showShare();
       return;
     }
 
@@ -195,6 +248,7 @@
     if (currentRow >= ROWS) {
       finished = true;
       setMessage(`Out of guesses — it was “${secret.toUpperCase()}”.`);
+      showShare();
     } else {
       setMessage('');
     }
@@ -279,6 +333,7 @@
   }
 
   function resetGame() {
+    seedStr = computeSeed();
     secret = pickSecret();
     currentRow = 0;
     currentCol = 0;
@@ -291,7 +346,8 @@
       k.classList.remove('absent', 'present', 'correct');
     });
     updateBoard();
-    setMessage('New secret picked. Good luck!');
+    hideShare();
+    setMessage(`New secret picked. Seed: ${seedStr}`);
   }
 
   async function onLoadDictionary(e) {
@@ -338,5 +394,56 @@
       { transform: 'translateX(6px)' },
       { transform: 'translateX(0)' },
     ], { duration: 150, iterations: 2 });
+  }
+
+  function updateSeedUIState() {
+    if (!dailyToggle || !seedInput) return;
+    seedInput.disabled = dailyToggle.checked;
+  }
+
+  function onSeedControlsChange() {
+    updateSeedUIState();
+    resetGame();
+  }
+
+  function buildShareSummary() {
+    const daily = dailyToggle ? dailyToggle.checked : true;
+    const title = `Music Wordle — ${daily ? 'Daily' : 'Seeded'} ${seedStr}`;
+    const usedRows = Math.min(currentRow, ROWS);
+    const header = `Guesses: ${usedRows}/${ROWS}`;
+    const emoji = { correct: '🟩', present: '🟨', absent: '⬛' };
+    const rows = [];
+    for (let r = 0; r < usedRows; r++) {
+      rows.push(statuses[r].map(s => emoji[s] || '⬛').join(''));
+    }
+    return [title, header, ...rows].join('\n');
+  }
+
+  function showShare() {
+    if (!shareBtn || !shareText || !shareContainer) return;
+    const text = buildShareSummary();
+    shareText.value = text;
+    shareBtn.style.display = 'inline-block';
+    shareContainer.style.display = 'block';
+  }
+  function hideShare() {
+    if (!shareBtn || !shareText || !shareContainer) return;
+    shareBtn.style.display = 'none';
+    shareContainer.style.display = 'none';
+    shareText.value = '';
+  }
+  function onShare() {
+    const text = shareText.value;
+    if (!text) return;
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(() => {
+        setMessage('Copied result to clipboard');
+      }).catch(() => {
+        setMessage('Copy failed — select text and press Ctrl/Cmd+C');
+      });
+    } else {
+      shareText.select();
+      setMessage('Select text and press Ctrl/Cmd+C');
+    }
   }
 })();

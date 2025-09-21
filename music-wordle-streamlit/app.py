@@ -347,13 +347,13 @@ def main():
         for ch in "QWERTYUIOP":
             label = f"{emoji.get(key_status.get(ch, ''), '⬜️')} {ch}"
             st.button(label, key=f'kb_{ch}_r1_inline', on_click=press_letter, args=(ch.lower(),))
-        st.markdown("<div style='width:100%; height:6px'></div>", unsafe_allow_html=True)
+        st.markdown("<div style='width:100%; height:6px; clear:both'></div>", unsafe_allow_html=True)
 
         # Row 2 inline
         for ch in "ASDFGHJKL":
             label = f"{emoji.get(key_status.get(ch, ''), '⬜️')} {ch}"
             st.button(label, key=f'kb_{ch}_r2_inline', on_click=press_letter, args=(ch.lower(),))
-        st.markdown("<div style='width:100%; height:6px'></div>", unsafe_allow_html=True)
+        st.markdown("<div style='width:100%; height:6px; clear:both'></div>", unsafe_allow_html=True)
 
         # Row 3 inline: ENTER, letters, BACK
         st.button('ENTER', key='kb_enter_inline', disabled=(len(st.session_state.get('current_guess','')) != COLS), on_click=press_enter)

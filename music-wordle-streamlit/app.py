@@ -246,6 +246,36 @@ def main():
     st.write('')
     st.info(st.session_state.message or 'Guess the music word!')
 
+    # Handle HTML keyboard clicks via query param (?k=LETTER/ENTER/BACK)
+    def _get_qp_key():
+        qp = st.query_params
+        k = qp.get('k')
+        if isinstance(k, list):
+            return k[0]
+        return k
+
+    def _clear_qp():
+        try:
+            if 'k' in st.query_params:
+                del st.query_params['k']
+        except Exception:
+            pass
+
+    ev = _get_qp_key()
+    if ev:
+        if ev == 'ENTER':
+            submit_guess_from_state()
+        elif ev == 'BACK':
+            if st.session_state.get('current_guess'):
+                st.session_state.current_guess = st.session_state.get('current_guess','')[:-1]
+                haptic()
+        elif re.fullmatch(r"[A-Z]", ev):
+            if len(st.session_state.get('current_guess','')) < COLS:
+                st.session_state.current_guess = st.session_state.get('current_guess','') + ev.lower()
+                haptic()
+        _clear_qp()
+
+
     # On-screen keyboard status (shows which letters you've tried)
     def compute_key_status(guesses: List[str], stats_rows: List[List[str]]):
         priority = {'absent': 0, 'present': 1, 'correct': 2}
@@ -313,49 +343,38 @@ def main():
                 st.session_state.current_guess = tg
                 submit_guess_from_state()
 
-        # Streamlit-native clickable keyboard (robust on Cloud and iPhone)
+        # Horizontal HTML keyboard (same-tab anchors) for reliable layout on iPhone portrait
         st.caption('Keyboard')
-        def press_letter(ch: str):
-            if len(st.session_state.get('current_guess','')) < COLS:
-                st.session_state.current_guess = st.session_state.get('current_guess','') + ch
-                haptic()
-        def press_back():
-            if st.session_state.get('current_guess'):
-                st.session_state.current_guess = st.session_state.get('current_guess','')[:-1]
-                haptic()
-        def press_enter():
-            if len(st.session_state.get('current_guess','')) == COLS:
-                submit_guess_from_state()
-
-        # Global CSS to render buttons inline and ultra-compact
-        st.markdown(
-            """
-            <style>
-              .stButton { display:inline-block; margin: 1px; }
-              .stButton>button { min-width: 34px; padding: 4px 4px; font-size: 12px; line-height: 1.1; }
-              @media (max-width: 420px) {
-                .stButton>button { min-width: 30px; padding: 3px 3px; font-size: 12px; }
-              }
-            </style>
-            """,
-            unsafe_allow_html=True,
-        )
-
-        # Row 1 inline
-        for ch in "QWERTYUIOP":
-            st.button(ch, key=f'kb_{ch}_r1_inline', on_click=press_letter, args=(ch.lower(),))
-        st.markdown("<div style='width:100%; height:6px; clear:both'></div>", unsafe_allow_html=True)
-
-        # Row 2 inline
-        for ch in "ASDFGHJKL":
-            st.button(ch, key=f'kb_{ch}_r2_inline', on_click=press_letter, args=(ch.lower(),))
-        st.markdown("<div style='width:100%; height:6px; clear:both'></div>", unsafe_allow_html=True)
-
-        # Row 3 inline: ENTER, letters, BACK
-        st.button('↵', key='kb_enter_inline', disabled=(len(st.session_state.get('current_guess','')) != COLS), on_click=press_enter)
-        for ch in "ZXCVBNM":
-            st.button(ch, key=f'kb_{ch}_r3_inline', on_click=press_letter, args=(ch.lower(),))
-        st.button('⌫', key='kb_back_inline', disabled=(len(st.session_state.get('current_guess','')) == 0), on_click=press_back)
+        kb_css = """
+        <style>
+          .kb { display:flex; flex-direction:column; gap:6px; align-items:center; }
+          .kb-row { display:flex; gap:6px; justify-content:center; }
+          .key { display:inline-block; min-width:34px; padding:7px 6px; border-radius:6px; text-decoration:none; font-weight:700; font-size:14px; }
+          .neutral { background:#1f1f20; color:#f0f0f0; }
+          .correct { background:#538d4e; color:#fff; }
+          .present { background:#b59f3b; color:#fff; }
+          .absent  { background:#3a3a3c; color:#fff; }
+          .disabled { opacity:.6; pointer-events:none; }
+          @media (max-width: 420px) { .key { min-width:28px; font-size:13px; padding:6px 5px; } }
+        </style>
+        """
+        def cls_for(ch):
+            stt = key_status.get(ch, '')
+            return stt if stt in ('correct','present','absent') else 'neutral'
+        def row_html(letters):
+            parts = []
+            for ch in letters:
+                parts.append(f'<a class="key {cls_for(ch)}" target="_self" href="?k={ch}">{ch}</a>')
+            return '<div class="kb-row">' + ''.join(parts) + '</div>'
+        enter_disabled = (len(st.session_state.get('current_guess','')) != COLS)
+        back_disabled = (len(st.session_state.get('current_guess','')) == 0)
+        row1 = row_html("QWERTYUIOP")
+        row2 = row_html("ASDFGHJKL")
+        middle = row_html("ZXCVBNM")
+        enter_key = f'<a class="key neutral {"disabled" if enter_disabled else ""}" target="_self" href="?k=ENTER">ENTER</a>'
+        back_key  = f'<a class="key neutral {"disabled" if back_disabled else ""}" target="_self" href="?k=BACK">⌫</a>'
+        row3 = '<div class="kb-row">' + enter_key + middle + back_key + '</div>'
+        st.markdown(kb_css + '<div class="kb">' + row1 + row2 + row3 + '</div>', unsafe_allow_html=True)
 
     else:
         st.success(st.session_state.message)

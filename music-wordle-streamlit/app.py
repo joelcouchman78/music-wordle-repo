@@ -7,7 +7,6 @@ from typing import List, Tuple
 
 import streamlit as st
 import streamlit.components.v1 as components
-from streamlit.components.v1 import declare_component
 
 
 # Simple haptic feedback helper usable across the module
@@ -209,8 +208,7 @@ def main():
         st.button('New Game', on_click=new_game, use_container_width=True)
         st.write(f"Answers: {len(st.session_state.answers)}")
         st.write(f"Dictionary: {len(st.session_state.allowed)}")
-        colored_kb = st.toggle('Colored keyboard (beta)', value=False, help='Enable custom colored keyboard component. Turn off if it fails to load.')
-        uploaded = st.file_uploader('Load Dictionary (.txt or .json)', type=['txt', 'json'])
+                uploaded = st.file_uploader('Load Dictionary (.txt or .json)', type=['txt', 'json'])
         if uploaded is not None:
             load_custom_dictionary(uploaded.getvalue())
             st.success(f"Loaded dictionary with {len(st.session_state.allowed)} words (answers included).")
@@ -353,33 +351,7 @@ def main():
         if st.button('Guess', disabled=(len(st.session_state.get('current_guess','')) != COLS)):
             submit_guess_from_state()
 
-        # Try rendering the custom keyboard (guarded by toggle). Fallbacks below remain available.
-        if colored_kb:
-            try:
-                event = mw_keyboard(
-                    rows=kb_rows,
-                    statuses=key_status,
-                    disableEnter=(len(st.session_state.get('current_guess','')) != COLS),
-                    disableBackspace=(len(st.session_state.get('current_guess','')) == 0),
-                    key='mw_keyboard_component'
-                )
-            except Exception:
-                event = None
-                st.warning('Colored keyboard failed to load. Use the inputs below or toggle it off in the sidebar.')
-            if event:
-                if event == 'ENTER':
-                    submit_guess_from_state()
-                elif event == 'BACK':
-                    if st.session_state.get('current_guess'):
-                        st.session_state.current_guess = st.session_state.get('current_guess','')[:-1]
-                        haptic()
-                        st.rerun()
-                else:
-                    # Letter
-                    if len(st.session_state.get('current_guess','')) < COLS and re.fullmatch(r"[A-Z]", event):
-                        st.session_state.current_guess = st.session_state.get('current_guess','') + event.lower()
-                        haptic()
-                        st.rerun()
+        # Colored keyboard removed for reliability on Cloud; using robust fallbacks below
 
         # Fallback input: typed guess field
         typed = st.text_input('Type a guess (fallback)', key='typed_guess', max_chars=COLS)

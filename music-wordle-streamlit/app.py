@@ -343,7 +343,7 @@ def main():
                 st.session_state.current_guess = tg
                 submit_guess_from_state()
 
-        # Streamlit-native clickable keyboard (no flicker). May stack on very small screens.
+        # Streamlit-native clickable keyboard (no flicker).
         st.caption('Keyboard')
         def press_letter(ch: str):
             if len(st.session_state.get('current_guess','')) < COLS:
@@ -373,24 +373,37 @@ def main():
 
         emoji = {'correct': '🟩', 'present': '🟨', 'absent': '⬛', '': '⬜️'}
 
-        # Row 1
-        for ch in "QWERTYUIOP":
-            label = f"{emoji.get(key_status.get(ch, ''), '⬜️')} {ch}"
-            st.button(label, key=f'kb_{ch}_r1', on_click=press_letter, args=(ch.lower(),))
+        # Row 1 (10 columns)
+        row1 = "QWERTYUIOP"
+        cols = st.columns(len(row1), gap='small')
+        for i, ch in enumerate(row1):
+            with cols[i]:
+                label = f"{emoji.get(key_status.get(ch, ''), '⬜️')} {ch}"
+                st.button(label, key=f'kb_{ch}_r1', on_click=press_letter, args=(ch.lower(),))
+
         st.markdown("<div style='width:100%; height:6px'></div>", unsafe_allow_html=True)
 
-        # Row 2
-        for ch in "ASDFGHJKL":
-            label = f"{emoji.get(key_status.get(ch, ''), '⬜️')} {ch}"
-            st.button(label, key=f'kb_{ch}_r2', on_click=press_letter, args=(ch.lower(),))
+        # Row 2 (9 columns)
+        row2 = "ASDFGHJKL"
+        cols = st.columns(len(row2), gap='small')
+        for i, ch in enumerate(row2):
+            with cols[i]:
+                label = f"{emoji.get(key_status.get(ch, ''), '⬜️')} {ch}"
+                st.button(label, key=f'kb_{ch}_r2', on_click=press_letter, args=(ch.lower(),))
+
         st.markdown("<div style='width:100%; height:6px'></div>", unsafe_allow_html=True)
 
-        # Row 3
-        st.button('↵', key='kb_enter', disabled=(len(st.session_state.get('current_guess','')) != COLS), on_click=press_enter)
-        for ch in "ZXCVBNM":
-            label = f"{emoji.get(key_status.get(ch, ''), '⬜️')} {ch}"
-            st.button(label, key=f'kb_{ch}_r3', on_click=press_letter, args=(ch.lower(),))
-        st.button('⌫', key='kb_back', disabled=(len(st.session_state.get('current_guess','')) == 0), on_click=press_back)
+        # Row 3 (9 columns: ENTER + 7 letters + BACK)
+        row3_letters = "ZXCVBNM"
+        cols = st.columns(9, gap='small')
+        with cols[0]:
+            st.button('↵', key='kb_enter', disabled=(len(st.session_state.get('current_guess','')) != COLS), on_click=press_enter)
+        for offset, ch in enumerate(row3_letters, start=1):
+            with cols[offset]:
+                label = f"{emoji.get(key_status.get(ch, ''), '⬜️')} {ch}"
+                st.button(label, key=f'kb_{ch}_r3', on_click=press_letter, args=(ch.lower(),))
+        with cols[-1]:
+            st.button('⌫', key='kb_back', disabled=(len(st.session_state.get('current_guess','')) == 0), on_click=press_back)
 
     else:
         st.success(st.session_state.message)

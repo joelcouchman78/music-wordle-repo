@@ -394,7 +394,8 @@ def main():
                 if stt == 'correct': cls='fb-correct'
                 elif stt == 'present': cls='fb-present'
                 elif stt == 'absent': cls='fb-absent'
-                parts.append(f'<button type="button" class="fb-key {cls}" onclick="fbSet(\'{ch}\')">{ch}</button>')
+                href = f"?k={ch}"
+                parts.append(f'<a class="fb-key {cls}" target="_self" href="{href}">{ch}</a>')
             return '<div class="fb-row">' + ''.join(parts) + '</div>'
 
         # Build rows + enter/back

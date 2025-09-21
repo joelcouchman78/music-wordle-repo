@@ -405,7 +405,8 @@ def main():
         back_btn = f'<button type="button" class="fb-key fb-neutral" onclick="fbSet(\'BACK\')" {"disabled" if disable_back else ""}>⌫</button>'
         row3_keys = ''.join([enter_btn, fb_row_html(kb_rows[2]), back_btn])
         rows_html.append(f'<div class="fb-row">{row3_keys}</div>')
-        st.markdown(fb_css + fb_js + '<div class="fb-kb">' + ''.join(rows_html) + '</div>', unsafe_allow_html=True)
+        fb_html = fb_css + fb_js + '<div class="fb-kb">' + ''.join(rows_html) + '</div>'
+        components.html(fb_html, height=180, scrolling=False)
 
     else:
         st.success(st.session_state.message)

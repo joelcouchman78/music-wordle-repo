@@ -229,6 +229,45 @@ def main():
     st.write('')
     st.info(st.session_state.message or 'Guess the music word!')
 
+    # On-screen keyboard status (shows which letters you've tried)
+    def compute_key_status(guesses: List[str], stats_rows: List[List[str]]):
+        priority = {'absent': 0, 'present': 1, 'correct': 2}
+        ks = {ch: '' for ch in 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'}
+        for r, guess in enumerate(guesses):
+            if r >= len(stats_rows):
+                break
+            row_stats = stats_rows[r]
+            for i, ch in enumerate(guess.upper()):
+                if i >= len(row_stats):
+                    continue
+                stv = row_stats[i] or ''
+                if stv not in priority:
+                    continue
+                cur = ks.get(ch, '')
+                if (not cur) or priority[stv] > priority.get(cur, -1):
+                    ks[ch] = stv
+        return ks
+
+    key_status = compute_key_status(st.session_state.guesses, st.session_state.statuses)
+    kb_rows = ["QWERTYUIOP", "ASDFGHJKL", "ZXCVBNM"]
+    kb_css = """
+    <style>
+      .mw-kb { display:flex; flex-direction:column; gap:6px; align-items:center; margin-top: 10px; }
+      .mw-kb-row { display:flex; gap:6px; }
+      .mw-key { min-width: 30px; padding: 8px 6px; border-radius:6px; background:#2a2a2b; color:#e5e5e5; font-weight:600; font-size:14px; text-align:center; }
+      .mw-key.correct { background:#538d4e; }
+      .mw-key.present { background:#b59f3b; }
+      .mw-key.absent  { background:#3a3a3c; }
+      @media (max-width: 420px) { .mw-key { min-width: 26px; font-size:13px; padding:7px 5px; } }
+    </style>
+    """
+    kb_rows_html = []
+    for row in kb_rows:
+        keys_html = ''.join(f'<div class="mw-key {key_status.get(ch, "")}">{ch}</div>' for ch in row)
+        kb_rows_html.append(f'<div class="mw-kb-row">{keys_html}</div>')
+    keyboard_html = kb_css + '<div class="mw-kb">' + "".join(kb_rows_html) + '</div>'
+    render_html(keyboard_html, height=120)
+
     # Input form
     if not st.session_state.finished:
         with st.form('guess_form', clear_on_submit=True):

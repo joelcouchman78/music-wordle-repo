@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Music Wordle</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <div class="app">
+      <header class="header">
+        <h1>Music Wordle</h1>
+        <div class="controls">
+          <button id="new-game" aria-label="Start a new game">New Game</button>
+          <input id="dict-file" type="file" accept=".txt,.json" style="display:none" />
+          <button id="load-dict" aria-label="Load dictionary from file">Load Dictionary</button>
+        </div>
+      </header>
+
+      <main>
+        <div id="board" class="board" aria-label="Word grid" aria-live="polite"></div>
+        <div id="message" class="message" role="status" aria-live="polite"></div>
+
+        <div id="keyboard" class="keyboard" aria-label="On-screen keyboard"></div>
+      </main>
+
+      <footer class="footer">
+        <p>Answers are music-related. Guesses must be valid English 5-letter words.</p>
+      </footer>
+    </div>
+
+    <script src="allowed-guesses.js"></script>
+    <script src="game.js"></script>
+  </body>
+  </html>

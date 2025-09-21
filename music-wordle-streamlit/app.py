@@ -233,6 +233,41 @@ def main():
     st.write('')
     st.info(st.session_state.message or 'Guess the music word!')
 
+    # Handle fallback keyboard clicks via query param (?k=VALUE)
+    def _get_qp_key():
+        try:
+            qp = st.query_params  # type: ignore[attr-defined]
+            k = qp.get('k')
+            if isinstance(k, list):
+                return k[0]
+            return k
+        except Exception:
+            qp = st.experimental_get_query_params()
+            arr = qp.get('k', [None])
+            return arr[0]
+
+    def _clear_qp():
+        try:
+            st.experimental_set_query_params()
+        except Exception:
+            pass
+
+    qp_event = _get_qp_key()
+    if qp_event:
+        if qp_event == 'ENTER':
+            submit_guess_from_state()
+        elif qp_event == 'BACK':
+            if st.session_state.get('current_guess'):
+                st.session_state.current_guess = st.session_state.get('current_guess','')[:-1]
+                haptic()
+                st.rerun()
+        elif re.fullmatch(r"[A-Z]", qp_event):
+            if len(st.session_state.get('current_guess','')) < COLS:
+                st.session_state.current_guess = st.session_state.get('current_guess','') + qp_event.lower()
+                haptic()
+                st.rerun()
+        _clear_qp()
+
     # On-screen keyboard status (shows which letters you've tried)
     def compute_key_status(guesses: List[str], stats_rows: List[List[str]]):
         priority = {'absent': 0, 'present': 1, 'correct': 2}
@@ -343,44 +378,44 @@ def main():
                 st.session_state.current_guess = tg
                 submit_guess_from_state()
 
-        # Fallback clickable keyboard (emoji labels) if component doesn't render
+        # Fallback clickable keyboard using HTML links to avoid column stacking on mobile
         st.caption('If the colored keyboard above does not appear, use this fallback:')
-        emoji = {'correct': '🟩', 'present': '🟨', 'absent': '⬛', '': '⬜️'}
-        # Row 1
-        cols = st.columns(len(kb_rows[0]), gap='small')
-        for i, ch in enumerate(kb_rows[0]):
-            label = f"{emoji.get(key_status.get(ch, ''), '⬜️')} {ch}"
-            if cols[i].button(label, key=f'fb_{ch}_r1'):
-                if len(st.session_state.current_guess) < COLS:
-                    st.session_state.current_guess += ch.lower()
-                    haptic()
-                    st.rerun()
-        # Row 2
-        cols = st.columns(len(kb_rows[1]), gap='small')
-        for i, ch in enumerate(kb_rows[1]):
-            label = f"{emoji.get(key_status.get(ch, ''), '⬜️')} {ch}"
-            if cols[i].button(label, key=f'fb_{ch}_r2'):
-                if len(st.session_state.current_guess) < COLS:
-                    st.session_state.current_guess += ch.lower()
-                    haptic()
-                    st.rerun()
-        # Row 3 with ENTER and ⌫
-        row3 = list(kb_rows[2])
-        cols = st.columns(len(row3) + 2, gap='small')
-        if cols[0].button('ENTER', disabled=(len(st.session_state.current_guess) != COLS), key='fb_enter'):
-            submit_guess_from_state()
-        for i, ch in enumerate(row3, start=1):
-            label = f"{emoji.get(key_status.get(ch, ''), '⬜️')} {ch}"
-            if cols[i].button(label, key=f'fb_{ch}_r3'):
-                if len(st.session_state.current_guess) < COLS:
-                    st.session_state.current_guess += ch.lower()
-                    haptic()
-                    st.rerun()
-        if cols[-1].button('⌫', disabled=(len(st.session_state.current_guess) == 0), key='fb_back'):
-            if st.session_state.current_guess:
-                st.session_state.current_guess = st.session_state.current_guess[:-1]
-                haptic()
-                st.rerun()
+        fb_css = """
+        <style>
+          .fb-kb { display:flex; flex-direction:column; gap:6px; align-items:center; }
+          .fb-row { display:flex; gap:6px; justify-content:center; }
+          .fb-key { display:inline-block; min-width:28px; padding:7px 6px; border-radius:6px; text-decoration:none; font-weight:700; font-size:14px; }
+          .fb-neutral { background:#1f1f20; color:#f0f0f0; }
+          .fb-correct { background:#538d4e; color:#fff; }
+          .fb-present { background:#b59f3b; color:#fff; }
+          .fb-absent  { background:#3a3a3c; color:#fff; }
+          .fb-key.disabled { opacity:.6; pointer-events:none; }
+          @media (max-width:420px){ .fb-key { min-width:24px; font-size:13px; padding:6px 5px; } }
+        </style>
+        """
+        def fb_row_html(chars):
+            parts = []
+            for ch in chars:
+                stt = key_status.get(ch, '')
+                cls = 'fb-neutral'
+                if stt == 'correct': cls='fb-correct'
+                elif stt == 'present': cls='fb-present'
+                elif stt == 'absent': cls='fb-absent'
+                href = f"?k={ch}"
+                parts.append(f'<a class="fb-key {cls}" href="{href}">{ch}</a>')
+            return '<div class="fb-row">' + ''.join(parts) + '</div>'
+
+        # Build rows + enter/back
+        rows_html = [fb_row_html(kb_rows[0]), fb_row_html(kb_rows[1])]
+        disable_enter = len(st.session_state.current_guess) != COLS
+        disable_back = len(st.session_state.current_guess) == 0
+        row3_keys = ''.join([
+            f'<a class="fb-key fb-neutral {"disabled" if disable_enter else ""}" href="?k=ENTER">ENTER</a>',
+            fb_row_html(kb_rows[2]),
+            f'<a class="fb-key fb-neutral {"disabled" if disable_back else ""}" href="?k=BACK">⌫</a>',
+        ])
+        rows_html.append(f'<div class="fb-row">{row3_keys}</div>')
+        st.markdown(fb_css + '<div class="fb-kb">' + ''.join(rows_html) + '</div>', unsafe_allow_html=True)
 
     else:
         st.success(st.session_state.message)

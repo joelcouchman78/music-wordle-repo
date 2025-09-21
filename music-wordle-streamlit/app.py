@@ -129,6 +129,8 @@ def ensure_state():
         st.session_state.message = ''
     if 'finished' not in st.session_state:
         st.session_state.finished = False
+    if 'guess_input' not in st.session_state:
+        st.session_state.guess_input = ''
 
 
 def new_game():
@@ -253,12 +255,12 @@ def main():
     kb_css = """
     <style>
       .mw-kb { display:flex; flex-direction:column; gap:6px; align-items:center; margin-top: 10px; }
-      .mw-kb-row { display:flex; gap:6px; }
-      .mw-key { min-width: 30px; padding: 8px 6px; border-radius:6px; background:#2a2a2b; color:#e5e5e5; font-weight:600; font-size:14px; text-align:center; }
+      .mw-kb-row { display:flex; gap:4px; }
+      .mw-key { min-width: 28px; padding: 7px 5px; border-radius:6px; background:#1f1f20; color:#f0f0f0; font-weight:700; font-size:14px; text-align:center; }
       .mw-key.correct { background:#538d4e; }
       .mw-key.present { background:#b59f3b; }
       .mw-key.absent  { background:#3a3a3c; }
-      @media (max-width: 420px) { .mw-key { min-width: 26px; font-size:13px; padding:7px 5px; } }
+      @media (max-width: 420px) { .mw-key { min-width: 24px; font-size:13px; padding:6px 4px; } }
     </style>
     """
     kb_rows_html = []
@@ -266,15 +268,43 @@ def main():
         keys_html = ''.join(f'<div class="mw-key {key_status.get(ch, "")}">{ch}</div>' for ch in row)
         kb_rows_html.append(f'<div class="mw-kb-row">{keys_html}</div>')
     keyboard_html = kb_css + '<div class="mw-kb">' + "".join(kb_rows_html) + '</div>'
-    render_html(keyboard_html, height=120)
+    render_html(keyboard_html, height=110)
 
     # Input form
+    def submit_guess_from_state():
+        g = re.sub(r"[^A-Za-z]", "", st.session_state.get('guess_input', '')).lower()
+        if len(g) != COLS:
+            st.session_state.message = 'Not enough letters'
+        elif g not in st.session_state.allowed:
+            st.session_state.message = 'Not in dictionary'
+        else:
+            res = score_guess(g, st.session_state.secret)
+            st.session_state.guesses.append(g)
+            st.session_state.statuses.append(res)
+            if g == st.session_state.secret:
+                tries = len(st.session_state.guesses)
+                st.session_state.message = f"Bravo! You solved it in {tries} {'try' if tries == 1 else 'tries'}."
+                st.session_state.finished = True
+            elif len(st.session_state.guesses) >= ROWS:
+                st.session_state.message = f"Out of guesses — it was “{st.session_state.secret.upper()}”."
+                st.session_state.finished = True
+            else:
+                st.session_state.message = ''
+            st.session_state.guess_input = ''
+        # Rerun to refresh board/keyboard
+        try:
+            st.rerun()
+        except Exception:
+            import streamlit as _st
+            if hasattr(_st, 'experimental_rerun'):
+                _st.experimental_rerun()
+
     if not st.session_state.finished:
-        with st.form('guess_form', clear_on_submit=True):
-            guess = st.text_input('Your guess', max_chars=COLS, help='Type a 5-letter English word and press Guess').strip()
+        with st.form('guess_form', clear_on_submit=False):
+            st.text_input('Your guess', key='guess_input', max_chars=COLS, help='Type a 5-letter English word and press Guess')
             submitted = st.form_submit_button('Guess')
         if submitted:
-            g = re.sub(r"[^A-Za-z]", "", guess).lower()
+            submit_guess_from_state()
             if len(g) != COLS:
                 st.session_state.message = 'Not enough letters'
             elif g not in st.session_state.allowed:
@@ -300,6 +330,37 @@ def main():
                     import streamlit as _st
                     if hasattr(_st, 'experimental_rerun'):
                         _st.experimental_rerun()
+        # Clickable keyboard (input)
+        st.write("")
+        # Row 1
+        cols = st.columns(len(kb_rows[0]), gap='small')
+        for i, ch in enumerate(kb_rows[0]):
+            if cols[i].button(ch, key=f'btn_{ch}_r1'):
+                if len(st.session_state.guess_input) < COLS:
+                    st.session_state.guess_input += ch.lower()
+                    st.rerun()
+        # Row 2
+        cols = st.columns(len(kb_rows[1]), gap='small')
+        for i, ch in enumerate(kb_rows[1]):
+            if cols[i].button(ch, key=f'btn_{ch}_r2'):
+                if len(st.session_state.guess_input) < COLS:
+                    st.session_state.guess_input += ch.lower()
+                    st.rerun()
+        # Row 3 with ENTER and ⌫
+        row3 = list(kb_rows[2])
+        cols = st.columns(len(row3) + 2, gap='small')
+        if cols[0].button('ENTER'):
+            submit_guess_from_state()
+        for i, ch in enumerate(row3, start=1):
+            if cols[i].button(ch, key=f'btn_{ch}_r3'):
+                if len(st.session_state.guess_input) < COLS:
+                    st.session_state.guess_input += ch.lower()
+                    st.rerun()
+        if cols[-1].button('⌫'):
+            if st.session_state.guess_input:
+                st.session_state.guess_input = st.session_state.guess_input[:-1]
+                st.rerun()
+
     else:
         st.success(st.session_state.message)
         # Shareable results block

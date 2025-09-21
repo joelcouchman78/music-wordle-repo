@@ -94,8 +94,8 @@ def tile_html(ch: str, status: str) -> str:
     bg = colors['empty'] if not status else colors.get(status, colors['empty'])
     border = bg
     return f"""
-    <div style="
-        width: 52px; height: 52px; display: grid; place-items: center;
+    <div class="mw-tile" style="
+        display: grid; place-items: center;
         background: {bg}; border: 2px solid {border}; border-radius: 6px;
         font-weight: 800; font-size: 22px; color: #e5e5e5;
         text-transform: uppercase;">
@@ -199,19 +199,32 @@ def main():
 
     st.title('Music Wordle')
 
-    # Grid rendering
+    # Inject responsive CSS for the grid (keeps 5 tiles per row on mobile)
+    st.markdown(
+        """
+        <style>
+        .mw-row { display:flex; gap:6px; justify-content:center; }
+        .mw-tile { width: 48px; height: 48px; }
+        @media (max-width: 420px) {
+          .mw-tile { width: 42px; height: 42px; font-size: 18px; }
+        }
+        </style>
+        """,
+        unsafe_allow_html=True,
+    )
+
+    # Grid rendering: build each row as a single flex container to avoid Streamlit column stacking on mobile
+    def render_row(chars, stats):
+        tiles = "".join(tile_html(chars[c].upper() if c < len(chars) else '', stats[c] if c < len(stats) else '') for c in range(COLS))
+        return f'<div class="mw-row">{tiles}</div>'
+
     for r in range(ROWS):
-        cols = st.columns(COLS, gap='small')
         if r < len(st.session_state.guesses):
             guess = st.session_state.guesses[r]
             status = st.session_state.statuses[r]
-            for c in range(COLS):
-                with cols[c]:
-                    st.markdown(tile_html(guess[c].upper(), status[c]), unsafe_allow_html=True)
+            st.markdown(render_row(guess, status), unsafe_allow_html=True)
         else:
-            for c in range(COLS):
-                with cols[c]:
-                    st.markdown(tile_html('', ''), unsafe_allow_html=True)
+            st.markdown(render_row(['']*COLS, ['']*COLS), unsafe_allow_html=True)
 
     st.write('')
     st.info(st.session_state.message or 'Guess the music word!')

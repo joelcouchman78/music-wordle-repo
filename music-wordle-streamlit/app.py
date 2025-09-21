@@ -284,10 +284,8 @@ def main():
                 _st.experimental_rerun()
 
     if not st.session_state.finished:
-        with st.form('guess_form', clear_on_submit=False):
-            st.text_input('Your guess', key='guess_input', max_chars=COLS, help='Type a 5-letter English word and press Guess')
-            submitted = st.form_submit_button('Guess')
-        if submitted:
+        st.text_input('Your guess', key='guess_input', max_chars=COLS, help='Type a 5-letter English word or use the keyboard below')
+        if st.button('Guess'):
             submit_guess_from_state()
         # Clickable keyboard (input)
         st.write("")

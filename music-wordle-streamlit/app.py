@@ -255,6 +255,16 @@ def main():
     # We will render a single clickable keyboard below with colored labels
 
     # Input form
+    def haptic():
+        try:
+            components.html("""
+            <script>
+            try { if (navigator.vibrate) navigator.vibrate(12); } catch(e) {}
+            </script>
+            """, height=0)
+        except Exception:
+            pass
+
     def submit_guess_from_state():
         g = re.sub(r"[^A-Za-z]", "", st.session_state.get('guess_input', '')).lower()
         if len(g) != COLS:
@@ -275,6 +285,7 @@ def main():
             else:
                 st.session_state.message = ''
             st.session_state.guess_input = ''
+        haptic()
         # Rerun to refresh board/keyboard
         try:
             st.rerun()
@@ -285,7 +296,7 @@ def main():
 
     if not st.session_state.finished:
         st.text_input('Your guess', key='guess_input', max_chars=COLS, help='Type a 5-letter English word or use the keyboard below')
-        if st.button('Guess'):
+        if st.button('Guess', disabled=(len(st.session_state.get('guess_input','')) != COLS)):
             submit_guess_from_state()
         # Clickable keyboard (input)
         st.write("")
@@ -297,6 +308,7 @@ def main():
             if cols[i].button(label, key=f'btn_{ch}_r1'):
                 if len(st.session_state.guess_input) < COLS:
                     st.session_state.guess_input += ch.lower()
+                    haptic()
                     st.rerun()
         # Row 2
         cols = st.columns(len(kb_rows[1]), gap='small')
@@ -305,21 +317,24 @@ def main():
             if cols[i].button(label, key=f'btn_{ch}_r2'):
                 if len(st.session_state.guess_input) < COLS:
                     st.session_state.guess_input += ch.lower()
+                    haptic()
                     st.rerun()
         # Row 3 with ENTER and ⌫
         row3 = list(kb_rows[2])
         cols = st.columns(len(row3) + 2, gap='small')
-        if cols[0].button('ENTER'):
+        if cols[0].button('ENTER', disabled=(len(st.session_state.guess_input) != COLS)):
             submit_guess_from_state()
         for i, ch in enumerate(row3, start=1):
             label = f"{emoji.get(key_status.get(ch, ''), '⬜️')} {ch}"
             if cols[i].button(label, key=f'btn_{ch}_r3'):
                 if len(st.session_state.guess_input) < COLS:
                     st.session_state.guess_input += ch.lower()
+                    haptic()
                     st.rerun()
-        if cols[-1].button('⌫'):
+        if cols[-1].button('⌫', disabled=(len(st.session_state.guess_input) == 0)):
             if st.session_state.guess_input:
                 st.session_state.guess_input = st.session_state.guess_input[:-1]
+                haptic()
                 st.rerun()
 
     else:

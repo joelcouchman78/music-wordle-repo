@@ -252,23 +252,7 @@ def main():
 
     key_status = compute_key_status(st.session_state.guesses, st.session_state.statuses)
     kb_rows = ["QWERTYUIOP", "ASDFGHJKL", "ZXCVBNM"]
-    kb_css = """
-    <style>
-      .mw-kb { display:flex; flex-direction:column; gap:6px; align-items:center; margin-top: 10px; }
-      .mw-kb-row { display:flex; gap:4px; }
-      .mw-key { min-width: 28px; padding: 7px 5px; border-radius:6px; background:#1f1f20; color:#f0f0f0; font-weight:700; font-size:14px; text-align:center; }
-      .mw-key.correct { background:#538d4e; }
-      .mw-key.present { background:#b59f3b; }
-      .mw-key.absent  { background:#3a3a3c; }
-      @media (max-width: 420px) { .mw-key { min-width: 24px; font-size:13px; padding:6px 4px; } }
-    </style>
-    """
-    kb_rows_html = []
-    for row in kb_rows:
-        keys_html = ''.join(f'<div class="mw-key {key_status.get(ch, "")}">{ch}</div>' for ch in row)
-        kb_rows_html.append(f'<div class="mw-kb-row">{keys_html}</div>')
-    keyboard_html = kb_css + '<div class="mw-kb">' + "".join(kb_rows_html) + '</div>'
-    render_html(keyboard_html, height=110)
+    # We will render a single clickable keyboard below with colored labels
 
     # Input form
     def submit_guess_from_state():
@@ -305,44 +289,22 @@ def main():
             submitted = st.form_submit_button('Guess')
         if submitted:
             submit_guess_from_state()
-            if len(g) != COLS:
-                st.session_state.message = 'Not enough letters'
-            elif g not in st.session_state.allowed:
-                st.session_state.message = 'Not in dictionary'
-            else:
-                res = score_guess(g, st.session_state.secret)
-                st.session_state.guesses.append(g)
-                st.session_state.statuses.append(res)
-                if g == st.session_state.secret:
-                    tries = len(st.session_state.guesses)
-                    st.session_state.message = f"Bravo! You solved it in {tries} {'try' if tries == 1 else 'tries'}."
-                    st.session_state.finished = True
-                elif len(st.session_state.guesses) >= ROWS:
-                    st.session_state.message = f"Out of guesses — it was “{st.session_state.secret.upper()}”."
-                    st.session_state.finished = True
-                else:
-                    st.session_state.message = ''
-                # Rerun to refresh the board after a submission
-                try:
-                    st.rerun()
-                except Exception:
-                    # Fallback for older versions
-                    import streamlit as _st
-                    if hasattr(_st, 'experimental_rerun'):
-                        _st.experimental_rerun()
         # Clickable keyboard (input)
         st.write("")
         # Row 1
+        emoji = {'correct': '🟩', 'present': '🟨', 'absent': '⬛', '': '⬜️'}
         cols = st.columns(len(kb_rows[0]), gap='small')
         for i, ch in enumerate(kb_rows[0]):
-            if cols[i].button(ch, key=f'btn_{ch}_r1'):
+            label = f"{emoji.get(key_status.get(ch, ''), '⬜️')} {ch}"
+            if cols[i].button(label, key=f'btn_{ch}_r1'):
                 if len(st.session_state.guess_input) < COLS:
                     st.session_state.guess_input += ch.lower()
                     st.rerun()
         # Row 2
         cols = st.columns(len(kb_rows[1]), gap='small')
         for i, ch in enumerate(kb_rows[1]):
-            if cols[i].button(ch, key=f'btn_{ch}_r2'):
+            label = f"{emoji.get(key_status.get(ch, ''), '⬜️')} {ch}"
+            if cols[i].button(label, key=f'btn_{ch}_r2'):
                 if len(st.session_state.guess_input) < COLS:
                     st.session_state.guess_input += ch.lower()
                     st.rerun()
@@ -352,7 +314,8 @@ def main():
         if cols[0].button('ENTER'):
             submit_guess_from_state()
         for i, ch in enumerate(row3, start=1):
-            if cols[i].button(ch, key=f'btn_{ch}_r3'):
+            label = f"{emoji.get(key_status.get(ch, ''), '⬜️')} {ch}"
+            if cols[i].button(label, key=f'btn_{ch}_r3'):
                 if len(st.session_state.guess_input) < COLS:
                     st.session_state.guess_input += ch.lower()
                     st.rerun()

@@ -130,8 +130,8 @@ def ensure_state():
         st.session_state.message = ''
     if 'finished' not in st.session_state:
         st.session_state.finished = False
-    if 'guess_input' not in st.session_state:
-        st.session_state.guess_input = ''
+    if 'current_guess' not in st.session_state:
+        st.session_state.current_guess = ''
 
 
 def new_game():
@@ -271,7 +271,7 @@ def main():
             pass
 
     def submit_guess_from_state():
-        g = re.sub(r"[^A-Za-z]", "", st.session_state.get('guess_input', '')).lower()
+        g = re.sub(r"[^A-Za-z]", "", st.session_state.get('current_guess', '')).lower()
         if len(g) != COLS:
             st.session_state.message = 'Not enough letters'
         elif g not in st.session_state.allowed:
@@ -289,7 +289,7 @@ def main():
                 st.session_state.finished = True
             else:
                 st.session_state.message = ''
-            st.session_state.guess_input = ''
+            st.session_state.current_guess = ''
         haptic()
         # Rerun to refresh board/keyboard
         try:
@@ -300,29 +300,29 @@ def main():
                 _st.experimental_rerun()
 
     if not st.session_state.finished:
-        st.text_input('Your guess', key='guess_input', max_chars=COLS, help='Type a 5-letter English word or use the keyboard below')
-        if st.button('Guess', disabled=(len(st.session_state.get('guess_input','')) != COLS)):
+        st.write(f"Current guess: {st.session_state.current_guess.upper():<{COLS}}")
+        if st.button('Guess', disabled=(len(st.session_state.get('current_guess','')) != COLS)):
             submit_guess_from_state()
         # Single on-screen keyboard component
         event = mw_keyboard(
             rows=kb_rows,
             statuses=key_status,
-            disableEnter=(len(st.session_state.get('guess_input','')) != COLS),
-            disableBackspace=(len(st.session_state.get('guess_input','')) == 0),
+            disableEnter=(len(st.session_state.get('current_guess','')) != COLS),
+            disableBackspace=(len(st.session_state.get('current_guess','')) == 0),
             key='mw_keyboard_component'
         )
         if event:
             if event == 'ENTER':
                 submit_guess_from_state()
             elif event == 'BACK':
-                if st.session_state.get('guess_input'):
-                    st.session_state.guess_input = st.session_state.get('guess_input','')[:-1]
+                if st.session_state.get('current_guess'):
+                    st.session_state.current_guess = st.session_state.get('current_guess','')[:-1]
                     haptic()
                     st.rerun()
             else:
                 # Letter
-                if len(st.session_state.get('guess_input','')) < COLS and re.fullmatch(r"[A-Z]", event):
-                    st.session_state.guess_input = st.session_state.get('guess_input','') + event.lower()
+                if len(st.session_state.get('current_guess','')) < COLS and re.fullmatch(r"[A-Z]", event):
+                    st.session_state.current_guess = st.session_state.get('current_guess','') + event.lower()
                     haptic()
                     st.rerun()
 

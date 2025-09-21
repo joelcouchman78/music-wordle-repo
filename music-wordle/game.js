@@ -79,6 +79,7 @@
   const shareBtn = document.getElementById('share-btn');
   const shareText = document.getElementById('share-text');
   const shareContainer = document.getElementById('share-container');
+  const hcToggle = document.getElementById('high-contrast');
 
   let secret = null;
   let currentRow = 0;
@@ -135,7 +136,7 @@
   updateSeedUIState();
   secret = seededChoice(ANSWERS, seedStr);
   updateBoard();
-  setMessage(`Guess the music word! Answers: ${ANSWERS.length}, Dictionary: ${allowedSet.size}. Seeded with: ${seedStr}`);
+  setSeedMessage();
 
   // Events
   document.addEventListener('keydown', onKeyDown);
@@ -145,6 +146,9 @@
   if (dailyToggle) dailyToggle.addEventListener('change', onSeedControlsChange);
   if (seedInput) seedInput.addEventListener('input', onSeedControlsChange);
   if (shareBtn) shareBtn.addEventListener('click', onShare);
+  if (hcToggle) hcToggle.addEventListener('change', onHighContrastChange);
+  // Apply initial HC state on load
+  if (hcToggle) onHighContrastChange();
 
   function pickSecret() {
     return seededChoice(ANSWERS, seedStr);
@@ -180,7 +184,15 @@
         const label = ch === '⌫' ? 'BACK' : ch;
         const btn = document.createElement('button');
         btn.className = 'key' + ((label === 'ENTER' || label === 'BACK') ? ' wide' : '');
-        btn.textContent = label === 'BACK' ? '⌫' : label;
+        if (label === 'ENTER') {
+          btn.textContent = 'Enter ↵';
+          btn.setAttribute('aria-label', 'Enter');
+        } else if (label === 'BACK') {
+          btn.textContent = 'Backspace ⌫';
+          btn.setAttribute('aria-label', 'Backspace');
+        } else {
+          btn.textContent = label;
+        }
         btn.dataset.key = label;
         btn.addEventListener('click', () => handleKey(label));
         rowEl.appendChild(btn);
@@ -207,7 +219,7 @@
       const guess = grid[currentRow].join('').toLowerCase();
       if (!allowedSet.has(guess)) {
         shakeRow(currentRow);
-        return setMessage('Not in dictionary');
+        return setMessage('Word not in dictionary');
       }
       revealGuess(guess);
       return;
@@ -316,6 +328,33 @@
       btn.dataset.status = status;
       btn.classList.remove('absent', 'present', 'correct');
       btn.classList.add(status);
+      // For HC mode, apply a marker character via data-mark
+      if (document.body.classList.contains('hc')) {
+        const mark = status === 'correct' ? '✓' : status === 'present' ? '•' : status === 'absent' ? '×' : '';
+        if (mark) btn.dataset.mark = mark; else delete btn.dataset.mark;
+      }
+    }
+  }
+
+  function onHighContrastChange() {
+    if (!hcToggle) return;
+    if (hcToggle.checked) document.body.classList.add('hc');
+    else document.body.classList.remove('hc');
+    // Refresh keyboard markers for current statuses
+    keyboardEl.querySelectorAll('.key').forEach(btn => {
+      const st = btn.dataset.status || '';
+      const mark = st === 'correct' ? '✓' : st === 'present' ? '•' : st === 'absent' ? '×' : '';
+      if (document.body.classList.contains('hc') && mark) btn.dataset.mark = mark;
+      else btn.removeAttribute('data-mark');
+    });
+  }
+
+  function setSeedMessage() {
+    const daily = dailyToggle ? dailyToggle.checked : true;
+    if (daily) {
+      setMessage(`Guess the music word! Answers: ${ANSWERS.length}, Dictionary: ${allowedSet.size}. Seeded with (UTC): ${seedStr}`);
+    } else {
+      setMessage(`Guess the music word! Answers: ${ANSWERS.length}, Dictionary: ${allowedSet.size}. Seeded with custom: "${seedStr}"`);
     }
   }
 
@@ -347,7 +386,7 @@
     });
     updateBoard();
     hideShare();
-    setMessage(`New secret picked. Seed: ${seedStr}`);
+    setSeedMessage();
   }
 
   async function onLoadDictionary(e) {

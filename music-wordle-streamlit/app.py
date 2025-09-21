@@ -410,6 +410,29 @@ def main():
         # Shareable results block
         summary_lines = build_share_summary(st.session_state.statuses, daily, seed_str)
         result_text = "\n".join(summary_lines)
+        # Quick copy button
+        if st.button('Copy result to clipboard'):
+            components.html(
+                f"""
+                <script>
+                const text = {result_text!r};
+                navigator.clipboard.writeText(text).then(() => {{
+                  const el = document.createElement('div');
+                  el.innerText = 'Copied!';
+                  el.style.position = 'fixed';
+                  el.style.bottom = '12px';
+                  el.style.right = '12px';
+                  el.style.background = '#333';
+                  el.style.color = 'white';
+                  el.style.padding = '6px 10px';
+                  el.style.borderRadius = '6px';
+                  document.body.appendChild(el);
+                  setTimeout(()=>document.body.removeChild(el), 900);
+                }});
+                </script>
+                """,
+                height=0,
+            )
         with st.expander('Share your result'):
             copy_ui(result_text)
 

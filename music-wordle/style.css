@@ -59,6 +59,7 @@ button:active { transform: translateY(1px); }
 }
 
 .tile {
+  position: relative;
   width: 62px;
   height: 62px;
   display: grid;
@@ -92,13 +93,13 @@ button:active { transform: translateY(1px); }
   color: var(--text);
   border: none;
   border-radius: 6px;
-  padding: 12px 10px;
-  min-width: 34px;
+  padding: 12px 12px;
+  min-width: 40px;
   font-weight: 600;
   cursor: pointer;
 }
 
-.key.wide { min-width: 64px; padding: 12px 14px; }
+.key.wide { min-width: 72px; padding: 12px 16px; }
 .key.correct { background: var(--correct); }
 .key.present { background: var(--present); }
 .key.absent  { background: var(--absent); }
@@ -107,6 +108,8 @@ button:active { transform: translateY(1px); }
 
 @media (max-width: 420px) {
   .tile { width: 52px; height: 52px; font-size: 22px; }
+  .key { min-width: 36px; padding: 10px 10px; font-size: 14px; }
+  .key.wide { min-width: 66px; }
 }
 .controls { display: flex; gap: 8px; align-items: center; }
 
@@ -122,3 +125,24 @@ button:active { transform: translateY(1px); }
 .secondary { background: #2a2a2b; color: var(--text); }
 
 .share textarea { width: 100%; background: #111; color: var(--text); border: 1px solid #2a2a2b; border-radius: 6px; padding: 8px; }
+
+/* High-contrast assistive symbols */
+.hc .tile.correct::after,
+.hc .tile.present::after,
+.hc .tile.absent::after {
+  position: absolute;
+  right: 6px;
+  bottom: 4px;
+  font-size: 12px;
+  opacity: 0.95;
+}
+.hc .tile.correct::after { content: '✓'; }
+.hc .tile.present::after { content: '•'; }
+.hc .tile.absent::after  { content: '×'; }
+
+.hc .key.correct::before,
+.hc .key.present::before,
+.hc .key.absent::before {
+  content: attr(data-mark);
+  margin-right: 4px;
+}

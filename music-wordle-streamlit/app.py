@@ -408,7 +408,7 @@ def copy_ui(result_text: str):
     st.text_area('Result', result_text, height=140)
     if st.button('Copy to clipboard'):
         # Inject small JS to copy; works in most browsers/Streamlit hosts
-        components.v1.html(
+        components.html(
             f"""
             <script>
             const text = {result_text!r};
